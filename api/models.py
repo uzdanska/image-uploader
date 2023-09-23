@@ -1,7 +1,5 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
 # Create your models here.
 
 class Tier(models.Model):
@@ -35,6 +33,10 @@ ACCESS_LEVEL_CHOICES = {
     'Enterprise': [('enterprise', '1000'), ('premium', '400'), ('basic', '200')],
 }
 
+ACCESS_LEVEL_BASIC = {
+    'Basic': '200'
+}
+
 class User(models.Model):
     user = models.ForeignKey(Tier, on_delete=models.CASCADE)
 
@@ -43,16 +45,23 @@ class User(models.Model):
 
 
 
-
-
 class Image(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
     createdTime = models.DateTimeField(auto_now_add=True)
-    expiring_link_duration = models.PositiveIntegerField(default=0, 
-                                                         validators=[MaxValueValidator(limit_value=1000)], 
-                                                         editable=True)
+    expiring_link_duration = models.PositiveIntegerField(default=300)
     image = models.ImageField(upload_to='images')
     access_level = models.CharField(max_length=100)
+
+    def __init__(self, *args, **kwargs):
+        super(Image, self).__init__(*args, **kwargs)
+        if self.user.user.name == "Enterprise":
+            self._meta.get_field('expiring_link_duration').default = 300
+            self._meta.get_field('expiring_link_duration').validators = [MaxValueValidator(limit_value=1000), 
+                                                                         MinValueValidator(limit_value=300)]
+            self._meta.get_field('expiring_link_duration').editable = True
+        else:
+            self._meta.get_field('expiring_link_duration').default = 0
+            self._meta.get_field('expiring_link_duration').editable = False
     
     def save(self, *args, **kwargs):
         if self.user.user.name not in ACCESS_LEVEL_CHOICES:
@@ -64,20 +73,8 @@ class Image(models.Model):
         if self.access_level not in valid_access_levels:
             raise ValidationError("Invalid access level for this user")
 
-        # super(Image, self).save(*args, **kwargs)
-        if self.user.user.name == 'Basic':
-            self.access_level = 'basic'
-        elif self.user.user.name == 'Premium':
-            self.access_level = 'premium'
-        elif self.user.user.name == 'Enterprise':
-            self.access_level = 'enterprise'
-        
-        if not self.user.user.isExpiringAllowed:
-            print(self.user.user.isExpiringAllowed)
-            self.expiring_link_duration = 0
-            # raise ValueError('You are not allowed to have a expiring_link')
+        super(Image, self).save(*args, **kwargs)
 
-    
     def __str__(self):
         return f"{self.user} - {self.image} + {self.access_level}"
     

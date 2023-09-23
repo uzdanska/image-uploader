@@ -12,6 +12,16 @@ class UserSerializer(ModelSerializer):
         model = User
         fields = "__all__"
 
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        tier = {
+            'name': obj.user.name,
+            'isExpiringAllowed': obj.user.isExpiringAllowed,
+        }
+
+        return tier
+
 # class ThumbNailsSerializer(ModelSerializer):
 
 #     class Meta:
@@ -36,7 +46,6 @@ class ImagesSerializer(ModelSerializer):
 
     def get_user(self, obj):
         user = {
-            'id': obj.user.user.id,
             'name': obj.user.user.name,
             'isExpiringAllowed': obj.user.user.isExpiringAllowed,
             'access_level_choices': [],
@@ -44,9 +53,9 @@ class ImagesSerializer(ModelSerializer):
 
         if obj.user.user.name in ACCESS_LEVEL_CHOICES:
             allowed_choices = ACCESS_LEVEL_CHOICES[obj.user.user.name]
-            user['access_level_choices'] = [{'name': choice[0], 'value': choice[1]} for choice in allowed_choices]
+            user['access_level_choices'] = [{'user': choice[0], 'value': choice[1]} for choice in allowed_choices]
 
-        return {'user': user}
+        return user
     
 
    
