@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from .models import Tier, Image, User, ACCESS_LEVEL_CHOICES
+from .models import Tier, Image, User
 
 class TierSerializer(ModelSerializer):
     class Meta:
@@ -48,12 +48,12 @@ class ImagesSerializer(ModelSerializer):
         user = {
             'name': obj.user.user.name,
             'isExpiringAllowed': obj.user.user.isExpiringAllowed,
-            'access_level_choices': [],
+            # 'access_level_choices': [],
         }
 
-        if obj.user.user.name in ACCESS_LEVEL_CHOICES:
-            allowed_choices = ACCESS_LEVEL_CHOICES[obj.user.user.name]
-            user['access_level_choices'] = [{'user': choice[0], 'value': choice[1]} for choice in allowed_choices]
+        # if obj.user.user.name in ACCESS_LEVEL_CHOICES:
+        #     allowed_choices = ACCESS_LEVEL_CHOICES[obj.user.user.name]
+        #     user['access_level_choices'] = [{'user': choice[0], 'value': choice[1]} for choice in allowed_choices]
 
         return user
     

@@ -1,6 +1,34 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
 # Create your models here.
+
+NAME_TIER = {
+    ('Basic', 'Basic'), 
+    ('Premium', 'Premium'), 
+    ('Enterprise', 'Enterprise')
+}
+
+ACCESS_LEVEL_BASIC = {
+    ('200', '200')
+}
+
+ACCESS_LEVEL_PREMIUM = {
+    ('200', '200'), 
+    ('400', '400'), 
+}
+
+ACCESS_LEVEL_ENTERPRISE = {
+    ('200', '200'), 
+    ('400', '400'), 
+    ('1000', '1000')
+}
+
+ACCESS_LEVEL_CHOICES = {
+    'Basic': '200',
+    'Premium': '400'
+}
+
 
 class Tier(models.Model):
     """
@@ -19,23 +47,12 @@ class Tier(models.Model):
 
 
     """
-    name = models.CharField(max_length=100, blank=False, unique=True)
+    name = models.CharField(max_length=100, choices=NAME_TIER, blank=False, unique=True)
     isExpiringAllowed = models.BooleanField()
 
     def __str__(self):
         return self.name
     
-
-
-ACCESS_LEVEL_CHOICES = {
-    'Basic': [('basic', '200')],
-    'Premium': [('premium', '400'), ('basic', '200')],
-    'Enterprise': [('enterprise', '1000'), ('premium', '400'), ('basic', '200')],
-}
-
-ACCESS_LEVEL_BASIC = {
-    'Basic': '200'
-}
 
 class User(models.Model):
     user = models.ForeignKey(Tier, on_delete=models.CASCADE)
@@ -46,9 +63,9 @@ class User(models.Model):
 
 
 class Image(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=6)
     createdTime = models.DateTimeField(auto_now_add=True)
-    expiring_link_duration = models.PositiveIntegerField(default=300)
+    expiring_link_duration = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(limit_value=3000)])
     image = models.ImageField(upload_to='images')
     access_level = models.CharField(max_length=100)
 
@@ -56,25 +73,40 @@ class Image(models.Model):
         super(Image, self).__init__(*args, **kwargs)
         if self.user.user.name == "Enterprise":
             self._meta.get_field('expiring_link_duration').default = 300
-            self._meta.get_field('expiring_link_duration').validators = [MaxValueValidator(limit_value=1000), 
-                                                                         MinValueValidator(limit_value=300)]
+            self._meta.get_field('expiring_link_duration').validators = [MaxValueValidator(limit_value=3000)]
             self._meta.get_field('expiring_link_duration').editable = True
+            self._meta.get_field('access_level').choices = ACCESS_LEVEL_ENTERPRISE
+        elif self.user.user.name == "Basic":
+            self._meta.get_field('expiring_link_duration').default = 0
+            self._meta.get_field('expiring_link_duration').editable = False
+            self._meta.get_field('access_level').choices = ACCESS_LEVEL_BASIC
         else:
             self._meta.get_field('expiring_link_duration').default = 0
             self._meta.get_field('expiring_link_duration').editable = False
+            self._meta.get_field('access_level').choices = ACCESS_LEVEL_PREMIUM
     
     def save(self, *args, **kwargs):
-        if self.user.user.name not in ACCESS_LEVEL_CHOICES:
-            raise ValidationError("Invalid user name")
-
-        allowed_choices = ACCESS_LEVEL_CHOICES[self.user.user.name]
-        valid_access_levels = dict(allowed_choices).keys()
+        if self.user.user.isExpiringAllowed == False:
+            self._meta.get_field('expiring_link_duration').validators = [MaxValueValidator(limit_value=3000), 
+                                                                         MinValueValidator(limit_value=0)]
+            if self.expiring_link_duration != 0:
+                raise ValidationError("You are not allowed to have expiring_link_duration. Please set it to 0")
+            if self.user.user.name == "Basic":
+                for level, value in ACCESS_LEVEL_CHOICES.items():
+                    if level == self.user.user.name:
+                        if self.access_level != value:
+                            raise ValidationError('You want to choose bigger value of image than you can. Choose smaller number :)')
+            else:
+                for level, value in ACCESS_LEVEL_CHOICES.items():
+                    if self.access_level not in ACCESS_LEVEL_CHOICES.values():
+                        raise ValidationError("You want to choose bigger value of image than you can. Choose smaller number :)")
+        else:
+            if not (300 <= self.expiring_link_duration <= 3000):
+                raise ValidationError('You have to choose a number between 300 and 3000')
         
-        if self.access_level not in valid_access_levels:
-            raise ValidationError("Invalid access level for this user")
-
         super(Image, self).save(*args, **kwargs)
+    
 
     def __str__(self):
-        return f"{self.user} - {self.image} + {self.access_level}"
+        return f"{self.user} - {self.image}"
     
