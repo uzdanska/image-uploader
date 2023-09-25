@@ -31,7 +31,9 @@ To run this project in a Docker container, follow these steps:
 
 2. Runing the project:
   You can run the project in cmd, using this command:
-  ```python3 manage.py runserver```
+  ```python manage.py runserver```
+  or 
+  ```python3 manage.py runsever```
 
   Copy in your browser: http://localhost:8000/ and use the web app :)
 
@@ -48,6 +50,15 @@ To run this project in a Docker container, follow these steps:
   
   In ```http://localhost:8000/api/images/{user.name}``` - Here, {user_name} can be one of the following: **Basic, Premium**, or **Enterprise**. Using this endpoint, you can view images uploaded by a specific user type.
 
+
+## 3. Testing:
+
+run 
+```python manage.py test api.test``` 
+
+or 
+
+```python3 manage.py test api.test```
 
 
 
