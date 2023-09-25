@@ -55,6 +55,14 @@ class Tier(models.Model):
     
 
 class User(models.Model):
+    """
+    Model representing a User.
+
+    Each User is associated with a Tier through a foreign key relationship.
+
+    Attributes:
+        user (ForeignKey): A foreign key relationship to a Tier model representing the user's tier.
+    """
     user = models.ForeignKey(Tier, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -63,6 +71,23 @@ class User(models.Model):
 
 
 class Image(models.Model):
+    """
+    Model representing a Image.
+
+    Each Image is a associated with a User through a foreign key relationship.
+
+    Attributes:
+        user (ForeignKey to User): A foreign key relationship to the User model.
+            This field associates the instance with a specific user.
+        createdTime (DateTimeField): A field representing the date and time when the instance was created.
+            It is automatically set to the current date and time when the instance is created.
+        expiring_link_duration (PositiveIntegerField): A field for storing the duration of an expiring link in minutes.
+            It has a default value of 0 and is validated to have a maximum value of 3000.
+        image (ImageField): A field for uploading and storing images.
+            The uploaded images are stored in the 'images' directory.
+        access_level (CharField): A field for storing a user's access level.
+            It has a maximum length of 100 characters.
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=6)
     createdTime = models.DateTimeField(auto_now_add=True)
     expiring_link_duration = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(limit_value=3000)])
