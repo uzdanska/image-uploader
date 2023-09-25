@@ -89,7 +89,6 @@ class ImageModelTestCase(TestCase):
         self.assertEqual(self.enterprise_image.access_level, self.list_access_level_enterprise[1][0])
 
         
-
     def test_access_level_validation(self):
         """Test access_level validation based on user's tier."""
         with self.assertRaises(ValidationError):

@@ -5,7 +5,7 @@ from .models import Tier, Image, User
 class TierSerializer(ModelSerializer):
     class Meta:
         model = Tier
-        fields = "__all__"
+        fields = ['name', 'isExpiringAllowed']
 
 class UserSerializer(ModelSerializer):
     class Meta:
